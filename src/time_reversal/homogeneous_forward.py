@@ -6,7 +6,6 @@ def homogeneous_forward(
 ) -> np.ndarray:
     """ODE forward pass for the homogeneous_forward."""
     d_phi = -phi_vec * 1j * kappa_vec**2 / (2 * k_const)
-
     return d_phi
 
 

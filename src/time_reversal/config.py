@@ -6,7 +6,6 @@ class SimulationConfig:
     c0: float = 1.0  # speed
     w: float = 1.0  # frequence
     L: float = 10.0  # propagation distance
-    r0: float = 2.0  # radius of the initial source
 
     x_size: float = 60.0  # spatial domain size (from -x_max/2 to x_max/2)
     nx: int = 2**10  # number of spatial points

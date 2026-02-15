@@ -1,6 +1,6 @@
 # Time Reversal
 
-Generative models using time reversal.
+Time reversal in homogeneous and random media
 
 ## Installation
 

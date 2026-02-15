@@ -13,34 +13,55 @@ class StationaryGaussianProcess:
         self.mean = mean
         self.covariance_function = covariance_function
 
-    def cov(self, t1: float, t2: float) -> float:
+    def cov(self, t1: float, t2: float) -> float | np.ndarray:
         """Calculate the covariance between two time points."""
         return self.covariance_function(t1 - t2)
 
-    def sample(self, n: int, dt: float) -> np.ndarray:
-        """Generate a sample path using FFT-based approximation."""
-        lags = np.arange(n) * dt
+    def sample(self, x: np.ndarray, n_samples: int = 1) -> np.ndarray:
+        """
+        Generate N sample paths using FFT-based approximation (Circulant Embedding).
 
-        # Handle both vectorized and scalar covariance functions
-        try:
-            c = self.covariance_function(lags)
-            if not isinstance(c, np.ndarray):
-                c = np.array(c)
-        except (TypeError, ValueError):
-            c = np.array([self.covariance_function(t) for t in lags])
+        Args:
+            x: The time points (must be equidistant).
+            n_samples: Number of independent paths to generate.
 
-        # Ensure c is 1D array (handling potential 0-d array from scalar return)
-        if c.ndim == 0:
-            c = np.array([self.covariance_function(t) for t in lags])
+        Returns:
+            np.ndarray: Shape (n_samples, len(x)) containing the generated paths.
+                        If n_samples=1, returns shape (len(x),) for convenience.
+        """
+        N = len(x)
+        if N == 0:
+            return np.array([])
 
-        circulant_first_row = np.concatenate([c, c[1:-1][::-1]])
+        dt = x[1] - x[0] if N > 1 else 1.0
+        lags = np.arange(N) * dt
 
-        eig_vals = fft(circulant_first_row).real
-        eig_vals = np.maximum(eig_vals, 0)
+        c = self.covariance_function(lags)
+        if np.isscalar(c):
+            c = np.array([self.covariance_function(lag) for lag in lags])
 
-        m = len(circulant_first_row)
-        noise = np.random.normal(0, 1, m) + 1j * np.random.normal(0, 1, m)
+        if N > 1:
+            c_circ = np.concatenate([c, c[1:-1][::-1]]) # type: ignore
+        else:
+            c_circ = c
 
-        sample_full = ifft(fft(noise) * np.sqrt(eig_vals)).real
+        S = fft(c_circ)
+        S_real = S.real # type: ignore
+        S_real[S_real < 0] = 0
 
-        return self.mean + sample_full[:n]
+        spectral_amplitude = np.sqrt(S_real)
+
+        M = len(c_circ) # type: ignore
+
+        noise = np.random.standard_normal(
+            (n_samples, M)
+        ) + 1j * np.random.standard_normal((n_samples, M))
+
+        weighted_noise = noise * spectral_amplitude
+        sample_circ = ifft(weighted_noise, axis=-1) * np.sqrt(M)
+        paths = np.real(sample_circ[:, :N]) + self.mean
+
+        if n_samples == 1:
+            return paths.flatten()
+
+        return paths

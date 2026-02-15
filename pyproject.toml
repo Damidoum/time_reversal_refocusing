@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "time_reversal"
 version = "0.1.0"
-description = "Time reversal generative models"
+description = "Time reversal in homogeneous and random media"
 readme = "README.md"
 requires-python = ">=3.10"
 license = {file = "LICENSE"}
@@ -13,9 +13,12 @@ authors = [
   {name = "Rouchouse Damien", email = "damien.rouchouse@etu.minesparis.psl.eu"},
 ]
 dependencies = [
+    "matplotlib>=3.10.8",
     "numpy",
+    "ruff>=0.15.1",
     "scipy",
     "torch",
+    "tqdm>=4.67.3",
 ]
 
 [project.optional-dependencies]
@@ -31,24 +34,19 @@ dev = [
 [tool.hatch.build.targets.wheel]
 packages = ["src/time_reversal"]
 
-[tool.pytest.ini_options]
-minversion = "6.0"
-addopts = "-ra -q"
-testpaths = [
-    "tests",
+[tool.pyright]
+typeCheckingMode = "basic"
+
+[tool.uv.workspace]
+members = [
+    "inverse_problem",
+    ".",
 ]
-python_files = ["test_*.py"]
 
-[tool.ruff]
-line-length = 88
-target-version = "py310"
+[tool.uv.sources]
+time-reversal = { workspace = true, editable = true }
 
-[tool.ruff.lint]
-select = ["E", "F", "I", "N", "W", "B"]
-ignore = []
-
-[tool.mypy]
-python_version = "3.10"
-warn_return_any = true
-warn_unused_configs = true
-disallow_untyped_defs = true
+[dependency-groups]
+dev = [
+    "time-reversal",
+]

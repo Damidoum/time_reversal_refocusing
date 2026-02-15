@@ -205,3 +205,5 @@ pyrightconfig.json
 
 # agent
 AGENTS.md
+tests/
+data/

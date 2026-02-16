@@ -107,7 +107,7 @@ def main():
             phi_init_ref = phi_init
 
     # plot the mean intensity of the refocused wave
-    mean_intensity_tr = np.mean(np.abs(np.array(final_fields)) ** 2, axis=0)
+    mean_intensity_tr = np.mean(np.array(final_fields), axis=0)
 
     # plot last realization
     last_history = all_histories[-1]

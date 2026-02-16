@@ -1,0 +1,22 @@
+# Physics parameters
+c0 = 1.0        # wave speed
+w = 1.0         # angular frequency
+L = 10.0        # total propagation distance
+r0 = 2.0        # initial beam radius
+
+# Numerical parameters
+x_size = 60.0   # transverse domain size
+nx = 1024       # number of grid points (2^10)
+h = 0.1         # integration step size
+
+# Random medium parameters
+z_c = 1.0       # correlation length (z)
+x_c = 4.0       # correlation length (x)
+sigma = 1.0     # fluctuation strength
+
+# Time reversal mirror parameters
+mirror_type = "gaussian" # "compact" or "gaussian"
+r_m = 20.0  # mirror radius
+
+# Simulation settings
+n_monte_carlo = 500 # number of realizations

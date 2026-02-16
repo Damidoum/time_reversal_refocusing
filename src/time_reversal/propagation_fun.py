@@ -17,7 +17,7 @@ def homogeneous_analytic_solution(
     return (r0 / r_t) * np.exp(-(x**2) / (r_t**2))
 
 
-def compactly_supported_mirror(x: np.ndarray, r_m: float) -> np.ndarray:
+def compact_mirror(x: np.ndarray, r_m: float) -> np.ndarray:
     """Mirror plane"""
     return np.where(np.abs(x) <= 2 * r_m, 1.0, 0.0) * (1.0 - (x / (2 * r_m)) ** 2) ** 2
 

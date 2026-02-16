@@ -41,17 +41,17 @@ class StationaryGaussianProcess:
             c = np.array([self.covariance_function(lag) for lag in lags])
 
         if N > 1:
-            c_circ = np.concatenate([c, c[1:-1][::-1]]) # type: ignore
+            c_circ = np.concatenate([c, c[1:-1][::-1]])  # type: ignore
         else:
             c_circ = c
 
         S = fft(c_circ)
-        S_real = S.real # type: ignore
+        S_real = S.real  # type: ignore
         S_real[S_real < 0] = 0
 
         spectral_amplitude = np.sqrt(S_real)
 
-        M = len(c_circ) # type: ignore
+        M = len(c_circ)  # type: ignore
 
         noise = np.random.standard_normal(
             (n_samples, M)

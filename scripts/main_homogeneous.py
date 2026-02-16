@@ -1,11 +1,12 @@
 import numpy as np
-from scipy.fft import fftfreq
 
 from time_reversal.config import SimulationConfig
+from time_reversal.field import WaveField
+from time_reversal.operators import DiffractionOperator
 from time_reversal.propagation_fun import (homogeneous_analytic_solution,
-                                           homogeneous_propagation_ode,
                                            init_homogeneous)
-from time_reversal.solver import PropagatorFourier, RungeKuttaSolver
+from time_reversal.propagator import SplitStepPropagator
+from time_reversal.solver import AnalyticSolver
 from time_reversal.viz import plot_comparison, setup_style
 
 
@@ -19,14 +20,18 @@ def main():
     phi_theory = homogeneous_analytic_solution(x, cfg.L, cfg.r0, cfg.k_const)
 
     # numerical solution
-    solver = PropagatorFourier(homogeneous_propagation_ode, solver=RungeKuttaSolver())
     phi0 = init_homogeneous(x=x, r0=cfg.r0)
-    kappa_vec = (
-        fftfreq(len(phi0), d=cfg.dx) * 2 * np.pi
-    )  # because fft convention is different from the Fourier Transform convention I used in the derivation of homogeneous forward function
-    phi = solver.forward(
-        phi0=phi0, z_min=0.0, z_max=cfg.L, kappa_vec=kappa_vec, k_const=cfg.k_const
-    )
+    field = WaveField(x=x, phi=phi0, k_const=cfg.k_const)
+
+    # Using AnalyticSolver for efficiency, but could be RungeKuttaSolver too
+    propagator = SplitStepPropagator(steps=[(DiffractionOperator(), AnalyticSolver())])
+
+    # Propagate
+    final_field = propagator.step(field, dz=cfg.L)
+
+    # Convert to real space for comparison
+    final_field = final_field.to_real()
+    phi = final_field.phi
 
     plot_comparison(
         x, phi, phi_theory, title=f"Beam Profile at $z={cfg.L}$ (Homogeneous)"

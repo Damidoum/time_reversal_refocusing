@@ -1,110 +1,71 @@
+import dataclasses
 from abc import ABC, abstractmethod
 
 import numpy as np
-from numpy.fft import fft, ifft
 from scipy.integrate import solve_ivp
+
+from time_reversal.field import WaveField
+from time_reversal.operators import LinearOperator
 
 
 class Solver(ABC):
-    """Abstract base class for propagation strategies."""
+    """Abstract base class for propagation solvers."""
 
     @abstractmethod
     def evolve(
-        self,
-        phi0: np.ndarray,
-        z_min: float,
-        z_max: float,
-        operator_func,
-        *args,
-        **kwargs,
-    ) -> np.ndarray:
-        """Evolves the field from z_min to z_max."""
+        self, field: WaveField, z_end: float, operator: LinearOperator, **kwargs
+    ) -> WaveField:
+        """Evolves the field from field.z to z_end using the given operator."""
         pass
 
 
 class AnalyticSolver(Solver):
     """
-    Fast solver.
-    Uses the exact analytical solution: phi(z+h) = phi(z) * exp(A * h).
+    Fast solver using the operator's analytic solution.
+    phi(z+h) = exp(A * h) * phi(z)
     """
 
     def evolve(
-        self,
-        phi0: np.ndarray,
-        z_min: float,
-        z_max: float,
-        operator_func,
-        *args,
-        **kwargs,
-    ) -> np.ndarray:
-        dz = z_max - z_min
+        self, field: WaveField, z_end: float, operator: LinearOperator, **kwargs
+    ) -> WaveField:
+        dz = z_end - field.z
+        if np.isclose(dz, 0):
+            return field
 
-        op = operator_func(z_min, phi0, *args, **kwargs)
-        evolution_op = np.exp(op * dz)
+        # Apply the operator's analytic evolution
+        new_field = operator.apply_op(field, dz, **kwargs)
 
-        return phi0 * evolution_op
+        # Update the z position
+        return dataclasses.replace(new_field, z=z_end)
 
 
 class RungeKuttaSolver(Solver):
     """
-    Slow solver.
-    Uses scipy.integrate.solve_ivp to solve dphi/dz = A * phi.
+    Slow solver using scipy.integrate.solve_ivp.
+    dphi/dz = A * phi
     """
 
     def evolve(
-        self,
-        phi0: np.ndarray,
-        z_min: float,
-        z_max: float,
-        operator_func,
-        *args,
-        **kwargs,
-    ) -> np.ndarray:
+        self, field: WaveField, z_end: float, operator: LinearOperator, **kwargs
+    ) -> WaveField:
+        if np.isclose(field.z, z_end):
+            return field
 
-        def wrapper_fun(z, phi_vec):
-            return operator_func(z, phi_vec, *args, **kwargs)
+        def ode_func(z, phi_flat):
+            dphi = operator.compute_derivative(z, phi_flat, field, **kwargs)
+            return dphi
+
+        y0 = field.phi.flatten()
 
         sol = solve_ivp(
-            fun=wrapper_fun,
-            t_span=(z_min, z_max),
-            y0=phi0,
+            fun=ode_func,
+            t_span=(field.z, z_end),
+            y0=y0,
             method="RK45",
             rtol=1e-8,
             atol=1e-11,
         )
-        return sol.y[:, -1]
 
+        new_phi = sol.y[:, -1].reshape(field.phi.shape)
 
-class Propagator:
-    """Handles propagation in Real Space"""
-
-    def __init__(self, func, solver: Solver) -> None:
-        self.func = func
-        self.solver = solver
-
-    def forward(
-        self, phi0: np.ndarray, z_min: float, z_max: float, *args, **kwargs
-    ) -> np.ndarray:
-        return self.solver.evolve(phi0, z_min, z_max, self.func, *args, **kwargs)
-
-
-class PropagatorFourier:
-    """Handles propagation in Fourier Space"""
-
-    def __init__(
-        self, func, solver: Solver
-    ) -> None:
-        self.func = func
-        self.solver = solver
-
-    def forward(
-        self, phi0: np.ndarray, z_min: float, z_max: float, *args, **kwargs
-    ) -> np.ndarray:
-
-        phi_fourier = fft(phi0)
-
-        sol_fourier = self.solver.evolve(
-            phi_fourier, z_min, z_max, self.func, *args, **kwargs
-        )
-
-        return ifft(sol_fourier, axis=0)
+        return dataclasses.replace(field, phi=new_phi, z=z_end)

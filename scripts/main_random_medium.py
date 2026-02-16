@@ -83,8 +83,8 @@ def main():
     x = np.linspace(cfg.x_min, cfg.x_max, cfg.nx)
 
     # params
-    USE_FAST_SOLVER = False
-    N_MONTE_CARLO = 10
+    USE_FAST_SOLVER = True
+    N_MONTE_CARLO = 1000
 
     final_fields = []
     # init history list

@@ -3,7 +3,7 @@ import numpy as np
 
 
 def setup_style():
-    # just setting up some latex style plots
+    # setting up some latex style plots
     plt.rcParams.update(
         {
             "text.usetex": True,
@@ -14,17 +14,22 @@ def setup_style():
     )
 
 
-def plot_comparison(x, psi_num, psi_theory, title="Comparison"):
+def plot_comparison(
+    x,
+    psi_num,
+    psi_theory,
+    title: str = "Comparison",
+    xlabel: str = r"$x$ (Transverse position)",
+    ylabel: str = r"$|\phi(x)|^2$ (Amplitude)",
+):
     # comparing numerical vs theory
     plt.figure(figsize=(8, 5))
 
     plt.plot(x, np.abs(psi_theory) ** 2, "k-", lw=1.5, label="Theory")
+    plt.plot(x, np.abs(psi_num) ** 2, "r--", ms=6, label="Simulation")
 
-    subset = slice(None, None, 10)
-    plt.plot(x[subset], np.abs(psi_num)[subset] ** 2, "r+", ms=6, label="Simulation")
-
-    plt.xlabel(r"$x$ (Transverse position)")
-    plt.ylabel(r"$|\phi(x)|^2$ (Amplitude)")
+    plt.xlabel(xlabel)
+    plt.ylabel(ylabel)
     plt.title(title)
     plt.legend()
     plt.grid(True, alpha=0.3)

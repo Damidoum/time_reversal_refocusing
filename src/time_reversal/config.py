@@ -12,6 +12,11 @@ class SimulationConfig:
 
     r0: float = 2.0  # radius of the initial source
 
+    h: float = 0.1  # step size for numerical integration
+    z_c: float = 1.0
+    x_c: float = 4.0
+    sigma: float = 1.0
+
     @property
     def dx(self) -> float:
         """Spatial step size."""

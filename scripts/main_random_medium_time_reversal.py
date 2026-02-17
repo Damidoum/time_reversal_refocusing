@@ -10,7 +10,7 @@ from time_reversal.propagation_fun import (
     covariance_function,
     gaussian_mirror,
     init_homogeneous,
-    mean_field_refocused,
+    mean_field_random_medium_refocused,
 )
 from time_reversal.propagator import SplitStepPropagator
 from time_reversal.random_process import StationaryGaussianProcess
@@ -136,7 +136,7 @@ def main():
         title=f"Mean Refocused Intensity at z=2L vs Initial Source\n(Averaged over {cfg.n_monte_carlo} realizations)",
     )
 
-    mean_theory = mean_field_refocused(
+    mean_theory = mean_field_random_medium_refocused(
         x,
         r0=cfg.r0,
         k_const=cfg.k_const,
@@ -151,7 +151,7 @@ def main():
         x,
         mean_intensity_tr,
         mean_theory,
-        title=f"Refocused Intensity at z=2L vs Initial Source",
+        title="Refocused Intensity at z=2L vs Initial Source",
     )
 
 

@@ -97,9 +97,9 @@ class SimulationConfig:
                 continue
 
             try:
-                if target_type == int:
+                if target_type is int:
                     cli_overrides[key] = int(value)
-                elif target_type == float:
+                elif target_type is float:
                     cli_overrides[key] = float(value)
                 else:
                     cli_overrides[key] = value

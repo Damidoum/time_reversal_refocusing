@@ -64,3 +64,50 @@ def mean_intensity(
         * np.exp(-((x / r_t) ** 2))
         * np.exp(-((k_const * c0) ** 2) * gamma0 * L / 8)
     )
+
+
+def mean_field_random_medium_refocused(
+    x: np.ndarray,
+    r0: float,
+    k_const: float,
+    c0: float,
+    L: float,
+    sigma: float,
+    z_c: float,
+    r_m: float,
+    x_c: float,
+) -> np.ndarray:
+    """Mean field refocus at the source plane."""
+    r_tr2 = (1 / r_m**2 + 1 / (r0**2 - 2j * L / k_const)) ** (-1) + 2j * L / k_const
+    a_tr = (
+        1 + 4 * L**2 / (k_const**2 * r0**2 * r_m**2) + 2j * L / (k_const * r_m**2)
+    ) ** 0.5
+
+    gamma2 = 2 * sigma**2 * z_c / (x_c**2)
+    inv_r_a2 = gamma2 * (c0 * k_const) ** 2 * L / 48
+    return 1 / a_tr * np.exp(-(x**2) / r_tr2) * np.exp(-(x**2) * inv_r_a2)
+
+
+def mean_field_homogeneous_refocused(
+    x: np.ndarray,
+    r0: float,
+    k_const: float,
+    c0: float,
+    L: float,
+    sigma: float,
+    z_c: float,
+    r_m: float,
+    x_c: float,
+) -> np.ndarray:
+    """Mean field refocus at the source plane."""
+    r_tr2 = (1 / r_m**2 + 1 / (r0**2 - 2j * L / k_const)) ** (-1) + 2j * L / k_const
+    a_tr = (
+        1 + 4 * L**2 / (k_const**2 * r0**2 * r_m**2) + 2j * L / (k_const * r_m**2)
+    ) ** 0.5
+    gamma0 = sigma**2 * z_c
+    return (
+        1
+        / a_tr
+        * np.exp(-(x**2) / r_tr2)
+        * np.exp(-((k_const * c0) ** 2) * gamma0 * L / 8)
+    )

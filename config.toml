@@ -19,4 +19,4 @@ mirror_type = "gaussian" # "compact" or "gaussian"
 r_m = 20.0  # mirror radius
 
 # Simulation settings
-n_monte_carlo = 500 # number of realizations
+n_monte_carlo = 100 # number of realizations

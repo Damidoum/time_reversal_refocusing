@@ -28,6 +28,10 @@ class SimulationConfig:
 
     n_monte_carlo: int = 100  # number of realizations
 
+    # time reversal
+    t_max: float = 20.0
+    nt: int = 600
+
     @property
     def dx(self) -> float:
         """Spatial step size."""

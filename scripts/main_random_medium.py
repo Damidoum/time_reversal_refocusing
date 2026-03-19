@@ -1,5 +1,6 @@
 import pathlib
 
+import matplotlib.pyplot as plt
 import numpy as np
 import tqdm
 
@@ -97,6 +98,7 @@ def monte_carlo_simulation(cfg: SimulationConfig, x: np.ndarray, use_fast_solver
         save_path=save_path / f"intensity_map_zc_{cfg.z_c:.2f}_h_{cfg.h:.2f}.pdf",
         show=False,
     )
+    plt.close()
 
     mean_field_numerical = np.mean(all_fields, axis=0)
     mean_field_theoretical = mean_intensity(
@@ -145,7 +147,7 @@ def main():
         ylabel=r"$|\phi(x)|^2$ (Amplitude)",
         save_path=pathlib.Path(f"output/random_medium/{cfg.mirror_type}/")
         / "intensity_comparison.pdf",
-        show=False,
+        show=True,
     )
 
 

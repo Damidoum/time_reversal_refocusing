@@ -36,8 +36,13 @@ class StationaryGaussianProcess:
         dt = x[1] - x[0] if N > 1 else 1.0
         lags = np.arange(N) * dt
 
-        c = self.covariance_function(lags)
-        if np.isscalar(c):
+        try:
+            c = self.covariance_function(lags)
+            if np.isscalar(c):
+                # If it returned a scalar despite receiving an array, or if lags was scalar
+                c = np.array([self.covariance_function(lag) for lag in lags])
+        except (TypeError, ValueError):
+            # Fallback for functions that don't accept arrays
             c = np.array([self.covariance_function(lag) for lag in lags])
 
         if N > 1:

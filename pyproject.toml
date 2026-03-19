@@ -9,6 +9,7 @@ authors = [
   {name = "Rouchouse Damien", email = "damien.rouchouse@etu.minesparis.psl.eu"},
 ]
 dependencies = [
+    "jupytext>=1.19.1",
     "matplotlib>=3.10.8",
     "scipy>=1.15.3",
     "tqdm>=4.67.3",
@@ -23,3 +24,9 @@ dev = []
 
 [tool.pyright]
 typeCheckingMode = "basic"
+
+[dependency-groups]
+dev = [
+    "pytest>=9.0.2",
+    "pytest-cov>=7.0.0",
+]

@@ -1,5 +1,6 @@
 import pathlib
 
+import matplotlib.pyplot as plt
 import numpy as np
 
 from time_reversal.config import SimulationConfig
@@ -51,6 +52,7 @@ def main():
         title=f"Wave Profile at $z={cfg.L}$ (Homogeneous medium)",
         save_path=pathlib.Path(save_path) / f"intensity_section_{cfg.L:.2f}.pdf",
     )
+    plt.close()
 
     plot_intensity_map(
         intensity_map=np.abs(history).T ** 2,
@@ -59,6 +61,7 @@ def main():
         xlabel="Propagation distance z",
         ylabel="Transverse coordinate x",
         save_path=pathlib.Path(save_path) / f"intensity_map_{cfg.L:.2f}.pdf",
+        show=True,
     )
 
 

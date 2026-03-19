@@ -1,6 +1,7 @@
 import dataclasses
 import pathlib
 
+import matplotlib.pyplot as plt
 import numpy as np
 import tqdm
 
@@ -99,6 +100,7 @@ def main():
             save_path=pathlib.Path(save_path)
             / "intensity_section_time_reversal_initial.pdf",
         )
+        plt.close()
 
         plot_intensity_section(
             x,
@@ -109,6 +111,7 @@ def main():
             ylabel=r"$|\phi(x)|^2$ (Amplitude)",
             save_path=pathlib.Path(save_path) / "intensity_section_time_reversal.pdf",
         )
+        plt.close()
 
         plot_intensity_map(
             intensity_map=np.abs(history).T ** 2,
@@ -118,6 +121,7 @@ def main():
             ylabel="Transverse coordinate x",
             save_path=pathlib.Path(save_path) / "intensity_map_time_reversal.pdf",
         )
+        plt.close()
 
     plot_multiple_intensity_section(
         x,

@@ -1,5 +1,6 @@
 import pathlib
 
+import matplotlib.pyplot as plt
 import numpy as np
 
 from time_reversal.config import SimulationConfig
@@ -9,6 +10,7 @@ from time_reversal.propagation_fun import (
 )
 from time_reversal.simulation import run_monte_carlo_simulation
 from time_reversal.viz import (
+    plot_intensity_grid,
     plot_intensity_map,
     plot_intensity_section,
     plot_multiple_intensity_section,
@@ -42,6 +44,7 @@ def monte_carlo_random_medium_time_reversal(
         ylabel="Transverse coordinate x",
         save_path=save_path / "intensity_map_time_reversal.pdf",
     )
+    plt.close()
 
     plot_intensity_section(
         x,
@@ -54,6 +57,7 @@ def monte_carlo_random_medium_time_reversal(
         label_curve2="Initial Source",
         save_path=save_path / "intensity_section_time_reversal_initial.pdf",
     )
+    plt.close()
 
     mean_theory = mean_field_random_medium_refocused(
         x,
@@ -78,8 +82,9 @@ def monte_carlo_random_medium_time_reversal(
         label_curve2="Theoretical Prediction",
         save_path=save_path / "intensity_section_time_reversal_theory.pdf",
     )
+    plt.close()
 
-    return mc_result.mean_field, mean_theory
+    return mc_result.mean_field, mean_theory, mc_result.single_realization_history
 
 
 def main():
@@ -97,23 +102,34 @@ def main():
     if not save_base_path.exists():
         save_base_path.mkdir(parents=True)
 
-    for rm in [2.0, 5.0, 10.0, 20.0]:
+    rms = [2.0, 5.0, 10.0, 20.0]
+    sigmas = [0.1, 0.2, 0.3, 0.5, 1.0, 2.0]
+
+    intensity_grid_data = []
+    row_labels = [f"$r_m={rm}$" for rm in rms]
+    col_labels = [rf"$\sigma={s}$" for s in sigmas]
+
+    for rm in rms:
         cfg.r_m = rm
         data_plot = []
         save_path = save_base_path / f"rm_{rm:.2f}"
+
         if not save_path.exists():
             save_path.mkdir(parents=True)
 
-        for sigma in [0.1, 0.2, 0.3, 0.5, 1.0, 2.0]:
+        intensity_grid_data_row = []
+
+        for sigma in sigmas:
             cfg.sigma = sigma
             # Run Monte Carlo Simulation for Time Reversal in Random Medium
-            mean_field, _ = monte_carlo_random_medium_time_reversal(
+            mean_field, _, history = monte_carlo_random_medium_time_reversal(
                 cfg,
                 x,
                 phi_init_ref,
                 save_path=save_path / f"sigma_{sigma:.2f}",
             )
             data_plot.append((mean_field, rf"Numerical ($\sigma={sigma:.2f}$)", None))
+            intensity_grid_data_row.append(np.abs(history).T ** 2)
 
         plot_multiple_intensity_section(
             x,
@@ -124,6 +140,20 @@ def main():
             save_path=save_path / "intensity_comparison.pdf",
             show=False,
         )
+        plt.close()
+        intensity_grid_data.append(intensity_grid_data_row)
+
+    plot_intensity_grid(
+        intensity_grid_data,
+        row_labels=row_labels,
+        col_labels=col_labels,
+        extent=[0, 2 * cfg.L, cfg.x_min, cfg.x_max],
+        xlabel="Propagation distance z",
+        ylabel="Transverse coordinate x",
+        title="Intensity Propagation for Time Reversal in Random Medium",
+        save_path=save_base_path / "intensity_grid_time_reversal.pdf",
+        show=True,
+    )
 
 
 if __name__ == "__main__":

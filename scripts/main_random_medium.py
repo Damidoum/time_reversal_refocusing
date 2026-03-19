@@ -1,3 +1,5 @@
+import pathlib
+
 import numpy as np
 import tqdm
 
@@ -14,7 +16,7 @@ from time_reversal.random_process import StationaryGaussianProcess
 from time_reversal.solver import AnalyticSolver, RungeKuttaSolver
 from time_reversal.viz import (
     plot_intensity_map,
-    plot_mean_field_comparison,
+    plot_multiple_intensity_section,
     setup_style,
 )
 
@@ -69,6 +71,46 @@ def solve(cfg: SimulationConfig, use_fast_solver=True):
     return history
 
 
+def monte_carlo_simulation(cfg: SimulationConfig, x: np.ndarray, use_fast_solver=True):
+    """Run Monte Carlo simulations for the random medium propagation."""
+    all_fields = []
+    iterator = tqdm.tqdm(
+        range(cfg.n_monte_carlo), desc=rf"Monte Carlo $\sigma$={cfg.sigma:.2f}"
+    )
+
+    for _ in iterator:
+        last_run_history = solve(cfg, use_fast_solver=use_fast_solver)
+        all_fields.append(last_run_history[-1])
+
+    save_path = pathlib.Path(
+        f"output/random_medium/{cfg.mirror_type}/sig_{cfg.sigma:.2f}/"
+    )
+    if not pathlib.Path(save_path).exists():
+        pathlib.Path(save_path).mkdir(parents=True)
+
+    plot_intensity_map(
+        intensity_map=np.abs(np.array(last_run_history).T) ** 2,
+        extent=[0, cfg.L, cfg.x_min, cfg.x_max],
+        title=rf"Intensity in random medium (z_c={cfg.z_c}, h={cfg.h}, $\sigma$={cfg.sigma})",
+        xlabel="Propagation distance z",
+        ylabel="Transverse coordinate x",
+        save_path=save_path / f"intensity_map_zc_{cfg.z_c:.2f}_h_{cfg.h:.2f}.pdf",
+        show=False,
+    )
+
+    mean_field_numerical = np.mean(all_fields, axis=0)
+    mean_field_theoretical = mean_intensity(
+        x=x,
+        r0=cfg.r0,
+        k_const=cfg.k_const,
+        L=cfg.L,
+        sigma=cfg.sigma,
+        z_c=cfg.z_c,
+        c0=cfg.c0,
+    )
+    return mean_field_numerical, mean_field_theoretical
+
+
 def main():
     setup_style()
 
@@ -80,44 +122,30 @@ def main():
 
     # params
     USE_FAST_SOLVER = True
-    final_fields = []
-    # init history list
 
-    print(f"Running {cfg.n_monte_carlo} simulations with h={cfg.h}...")
+    data_plot = []
 
-    # monte carlo iterator
-    iterator = tqdm.tqdm(
-        range(cfg.n_monte_carlo), desc=f"Monte Carlo (Fast={USE_FAST_SOLVER})"
-    )
+    for sigma in [0.1, 0.2, 0.3, 0.5, 1.0]:
+        cfg.sigma = sigma
+        mean_field_numerical, mean_field_theoretical = monte_carlo_simulation(
+            cfg, x=x, use_fast_solver=USE_FAST_SOLVER
+        )
+        data_plot.append(
+            (mean_field_numerical, rf"Numerical ($\sigma={sigma:.2f}$)", None)
+        )
+        data_plot.append(
+            (mean_field_theoretical, rf"Theory ($\sigma={sigma:.2f}$)", "k--")
+        )
 
-    for _ in iterator:
-        last_run_history = solve(cfg, use_fast_solver=USE_FAST_SOLVER)
-        final_fields.append(last_run_history[-1])
-
-    intensity_map = np.abs(np.array(last_run_history).T) ** 2
-    plot_intensity_map(
-        intensity_map,
-        extent=[0, cfg.L, cfg.x_min, cfg.x_max],
-        title=f"Single Realization Intensity (z_c={cfg.z_c}, h={cfg.h})\nSolver: {'Analytic' if USE_FAST_SOLVER else 'RK45'}",
-    )
-
-    mean_field_num = np.mean(final_fields, axis=0)
-
-    mean_field_theo = mean_intensity(
-        x=x,
-        r0=cfg.r0,
-        k_const=cfg.k_const,
-        L=cfg.L,
-        sigma=cfg.sigma,
-        z_c=cfg.z_c,
-        c0=cfg.c0,
-    )
-
-    plot_mean_field_comparison(
+    plot_multiple_intensity_section(
         x,
-        mean_field_num,
-        mean_field_theo,
-        title=f"Comparison of Mean Field Profile at z=L={cfg.L}\n(Averaged over {cfg.n_monte_carlo} realizations)",
+        data_list=data_plot,
+        title=f"Comparison of Intensity at z=L={cfg.L}\n(Averaged over {cfg.n_monte_carlo} realizations)",
+        xlabel=r"$x$ (Transverse position)",
+        ylabel=r"$|\phi(x)|^2$ (Amplitude)",
+        save_path=pathlib.Path(f"output/random_medium/{cfg.mirror_type}/")
+        / "intensity_comparison.pdf",
+        show=False,
     )
 
 

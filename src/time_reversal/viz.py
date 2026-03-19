@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -15,20 +17,24 @@ def setup_style():
     )
 
 
-def plot_comparison(
+def plot_intensity_section(
     x,
     psi_num,
     psi_theory,
-    title: str = "Comparison",
+    title: str = "Intensity comparison (z = L)",
     xlabel: str = r"$x$ (Transverse position)",
     ylabel: str = r"$|\phi(x)|^2$ (Amplitude)",
+    label_curve1: str = "Simulation",
+    label_curve2: str = "Theory",
+    save_path: str | Path | None = None,
+    show: bool = False,
 ):
 
     # comparing numerical vs theory
     plt.figure(figsize=(8, 5))
 
-    plt.plot(x, np.abs(psi_theory) ** 2, "k-", lw=1.5, label="Theory")
-    plt.plot(x, np.abs(psi_num) ** 2, "r--", ms=6, label="Simulation")
+    plt.plot(x, np.abs(psi_theory) ** 2, "k-", lw=1.5, label=label_curve2)
+    plt.plot(x, np.abs(psi_num) ** 2, "r--", ms=6, label=label_curve1)
 
     plt.xlabel(xlabel)
     plt.ylabel(ylabel)
@@ -36,7 +42,14 @@ def plot_comparison(
     plt.legend()
     plt.grid(True, alpha=0.3)
     plt.tight_layout()
-    plt.show()
+
+    if save_path is not None:
+        plt.savefig(save_path, dpi=300, transparent=True)
+
+    if show:
+        plt.show()
+    else:
+        plt.close()
 
 
 def plot_intensity_map(
@@ -45,6 +58,8 @@ def plot_intensity_map(
     title="Intensity Map",
     xlabel="Propagation distance z",
     ylabel="Transverse coordinate x",
+    save_path: str | Path | None = None,
+    show: bool = False,
 ):
     # plotting the heatmap of intensity
     plt.figure(figsize=(10, 6))
@@ -61,33 +76,50 @@ def plot_intensity_map(
     plt.ylabel(ylabel)
     plt.title(title)
     plt.tight_layout()
-    plt.show()
+
+    if save_path is not None:
+        plt.savefig(save_path, dpi=300, transparent=True)
+    if show:
+        plt.show()
+    else:
+        plt.close()
 
 
-def plot_multiple_comparisons(
+def plot_multiple_intensity_section(
     x,
-    data_list: list[tuple[np.ndarray, str, str]],
+    data_list: list[tuple[np.ndarray, str, str | None]],
     title: str = "Comparison",
     xlabel: str = r"$x$ (Transverse position)",
     ylabel: str = r"$|\phi(x)|^2$ (Amplitude)",
+    save_path: str | Path | None = None,
+    show: bool = False,
 ):
     """
     Plots multiple curves for comparison.
     data_list: list of tuples (y_data, label, style_string)
     e.g. [(psi1, "Label 1", "r-"), (psi2, "Label 2", "b--")]
     """
+
     plt.figure(figsize=(10, 6))
 
     for y_data, label, style in data_list:
-        plt.plot(x, np.abs(y_data) ** 2, style, label=label, linewidth=2)
+        if style is None:
+            style = "-"
+        plt.plot(x, np.abs(y_data) ** 2, style, label=label, linewidth=2, alpha=0.8)
 
     plt.xlabel(xlabel)
     plt.ylabel(ylabel)
     plt.title(title)
     plt.legend()
-    plt.grid(True, alpha=0.3)
     plt.tight_layout()
-    plt.show()
+
+    if save_path is not None:
+        plt.savefig(save_path, dpi=300, transparent=True)
+
+    if show:
+        plt.show()
+    else:
+        plt.close()
 
 
 def plot_intensity_grid(
@@ -151,39 +183,4 @@ def plot_intensity_grid(
                 ax.set_title(col_labels[j])
 
     fig.colorbar(im, ax=axes.ravel().tolist(), label=r"$|\phi|^2$")
-    plt.show()
-
-
-def plot_mean_field_comparison(
-    x,
-    mean_field_num,
-    mean_field_theo,
-    title="Mean Field Comparison",
-    xlabel="Transverse coordinate x",
-    ylabel="Magnitude",
-):
-    # comparing mean fields
-    plt.figure(figsize=(10, 6))
-
-    plt.plot(
-        x,
-        np.abs(mean_field_num),
-        "b-",
-        linewidth=2,
-        label="Numerical Mean Field",
-    )
-    plt.plot(
-        x,
-        np.abs(mean_field_theo),
-        "r--",
-        linewidth=2,
-        label="Theoretical Mean Field",
-    )
-
-    plt.xlabel(xlabel)
-    plt.ylabel(ylabel)
-    plt.legend()
-    plt.title(title)
-    plt.grid(True, alpha=0.3)
-    plt.tight_layout()
     plt.show()

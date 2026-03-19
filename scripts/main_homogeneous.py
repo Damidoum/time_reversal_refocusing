@@ -1,3 +1,5 @@
+import pathlib
+
 import numpy as np
 
 from time_reversal.config import SimulationConfig
@@ -9,7 +11,7 @@ from time_reversal.propagation_fun import (
 )
 from time_reversal.propagator import SplitStepPropagator
 from time_reversal.solver import AnalyticSolver
-from time_reversal.viz import plot_comparison, plot_intensity_map, setup_style
+from time_reversal.viz import plot_intensity_map, plot_intensity_section, setup_style
 
 
 def main():
@@ -38,8 +40,16 @@ def main():
     field = field.to_real()
     phi = field.phi
 
-    plot_comparison(
-        x, phi, phi_theory, title=f"Wave Profile at $z={cfg.L}$ (Homogeneous medium)"
+    save_path = "output/homogeneous/"
+    if not pathlib.Path(save_path).exists():
+        pathlib.Path(save_path).mkdir(parents=True)
+
+    plot_intensity_section(
+        x,
+        phi,
+        phi_theory,
+        title=f"Wave Profile at $z={cfg.L}$ (Homogeneous medium)",
+        save_path=pathlib.Path(save_path) / f"intensity_section_{cfg.L:.2f}.pdf",
     )
 
     plot_intensity_map(
@@ -48,6 +58,7 @@ def main():
         title="Intensity Map (Homogeneous medium)",
         xlabel="Propagation distance z",
         ylabel="Transverse coordinate x",
+        save_path=pathlib.Path(save_path) / f"intensity_map_{cfg.L:.2f}.pdf",
     )
 
 

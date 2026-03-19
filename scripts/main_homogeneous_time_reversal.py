@@ -1,6 +1,8 @@
 import dataclasses
+import pathlib
 
 import numpy as np
+import tqdm
 
 from time_reversal.config import SimulationConfig
 from time_reversal.field import WaveField
@@ -13,16 +15,15 @@ from time_reversal.propagation_fun import (
 )
 from time_reversal.propagator import SplitStepPropagator
 from time_reversal.solver import AnalyticSolver
-from time_reversal.viz import plot_comparison, plot_intensity_map, setup_style
+from time_reversal.viz import (
+    plot_intensity_map,
+    plot_intensity_section,
+    plot_multiple_intensity_section,
+    setup_style,
+)
 
 
-def main():
-    setup_style()  # matplotlib style for better visualization
-
-    # Configuration
-    cfg = SimulationConfig.from_cli()
-    print(f"Running Homogeneous Time Reversal with: {cfg}")
-
+def time_reversal_propagation(cfg: SimulationConfig):
     x = np.linspace(cfg.x_min, cfg.x_max, cfg.nx)
 
     # init Field
@@ -59,31 +60,73 @@ def main():
 
     phi_time_reversal = field.to_real().phi
 
-    plot_comparison(
-        x,
-        phi_time_reversal,
-        phi0,
-        title="Time Reversal at $z=2L$ (Homogeneous) vs Initial",
-    )
-
-    # Compare with theoretical TR solution
+    # theoritical solution
     phi_theory = homogeneous_time_reversal_analytic_solution(
         x, cfg.L, cfg.r0, cfg.k_const, cfg.r_m
     )
 
-    plot_comparison(
-        x,
-        phi_time_reversal,
-        phi_theory,
-        title="Time Reversal at $z=2L$ (Theory vs Simulation)",
-    )
+    return x, phi0, phi_time_reversal, phi_theory, history
 
-    plot_intensity_map(
-        intensity_map=np.abs(history).T ** 2,
-        extent=[0, 2 * cfg.L, cfg.x_min, cfg.x_max],
-        title="Intensity Map (Homogeneous medium)",
-        xlabel="Propagation distance z",
-        ylabel="Transverse coordinate x",
+
+def main():
+    setup_style()  # matplotlib style for better visualization
+
+    # Configuration
+    cfg = SimulationConfig.from_cli()
+    print(f"Running Homogeneous Time Reversal with: {cfg}")
+
+    rm_list = [2.0, 5.0, 10.0, 20.0]  # Mirror widths to compare
+    data = []
+
+    for rm in tqdm.tqdm(rm_list):
+        cfg.r_m = rm
+        x, phi0, phi_time_reversal, phi_theory, history = time_reversal_propagation(cfg)
+        data.append([phi_time_reversal, rf"Time Reversal ($r_m = {rm}$)", None])
+
+        save_path = f"output/homogeneous_time_reversal/{cfg.mirror_type}/{cfg.r_m:.2f}/"
+        if not pathlib.Path(save_path).exists():
+            pathlib.Path(save_path).mkdir(parents=True)
+
+        plot_intensity_section(
+            x,
+            phi_time_reversal,
+            phi0,
+            title="Intensity after time reversal ($z=2L$) vs Initial intensity ($z=0$)",
+            xlabel=r"$x$ (Transverse position)",
+            ylabel=r"$|\phi(x)|^2$ (Amplitude)",
+            label_curve1="Time Reversal",
+            label_curve2="Initial",
+            save_path=pathlib.Path(save_path)
+            / "intensity_section_time_reversal_initial.pdf",
+        )
+
+        plot_intensity_section(
+            x,
+            phi_time_reversal,
+            phi_theory,
+            title="Simulated intensity after time reversal ($z=2L$) vs Theoretical intensity",
+            xlabel=r"$x$ (Transverse position)",
+            ylabel=r"$|\phi(x)|^2$ (Amplitude)",
+            save_path=pathlib.Path(save_path) / "intensity_section_time_reversal.pdf",
+        )
+
+        plot_intensity_map(
+            intensity_map=np.abs(history).T ** 2,
+            extent=[0, 2 * cfg.L, cfg.x_min, cfg.x_max],
+            title=r"Intensity Map ($z$ from $0$ to $2L$, with time reversal at $z=L$)",
+            xlabel="Propagation distance z",
+            ylabel="Transverse coordinate x",
+            save_path=pathlib.Path(save_path) / "intensity_map_time_reversal.pdf",
+        )
+
+    plot_multiple_intensity_section(
+        x,
+        data_list=data,
+        title="Comparison of Time Reversal Intensity Profiles for Different Mirror Widths",
+        xlabel=r"$x$ (Transverse position)",
+        ylabel=r"$|\phi(x)|^2$ (Amplitude)",
+        save_path=f"output/homogeneous_time_reversal/{cfg.mirror_type}/comparison_time_reversal.pdf",
+        show=True,
     )
 
 

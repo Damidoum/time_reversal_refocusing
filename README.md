@@ -8,8 +8,8 @@ This project accompanies a theoretical report detailing how wave propagation thr
 The project is organized into the following components:
 
 - LaTeX Report: Contains the theoretical framework, mathematical derivations, and detailed explanations of the paraxial approximation and the Split-Step Fourier Method.
-- Jupyter Notebooks (notebooks/): Contains the interactive simulations, numerical experiments, and generated plots.
-- Core Library (`notebooks/`): The custom Python module implementing the numerical methods (Fourier transforms, time-reversal mirrors, split-step solvers). Note: the source code is intentionally co-located with the notebooks for execution context.
+- Jupyter Notebooks (`notebooks/`): Contains the interactive simulations, numerical experiments, and generated plots.
+- Core Library (`notebooks/`): The custom Python module implementing the numerical methods (Fourier transforms, time-reversal mirrors, split-step solvers). 
 - Animations: A .mp4 file illustrating the dynamic, time-dependent wave refocusing process, generated directly via the notebooks.
 
 # Installation
@@ -24,19 +24,24 @@ cd time_reversal
 ```
 
 2. Sync the environment:
-   This command automatically creates an isolated virtual environment and installs the required dependencies based on the project configuration.
-   uv sync
 
-3. Usage
-   To run the simulations and reproduce the results presented in the report, launch Jupyter Lab through uv to ensure the correct environment is used:
-   Launch Jupyter Lab:
+This command automatically creates an isolated virtual environment and installs the required dependencies based on the project configuration.
+```bash
+uv sync
+```
 
-   ```bash
-   uv run --with jupyter jupyter lab
-   ```
+# Usage
 
-   You can also navigate to the `scripts/` directory and execute the Python scripts directly using uv to ensure the correct environment is activated:
+To run the simulations and reproduce the results presented in the report, launch Jupyter Lab through uv to ensure the correct environment is used.
 
-   ```bash
-    uv run  scripts/<name_of_script>.py
-   ```
+Launch Jupyter Lab:
+
+```bash
+uv run --with jupyter jupyter lab
+```
+
+You can also navigate to the `scripts/` directory and execute the Python scripts directly using uv to ensure the correct environment is activated:
+
+```bash
+ uv run  scripts/<name_of_script>.py
+```

@@ -30,14 +30,32 @@ class WaveField:
         """Returns a deep copy of the WaveField."""
         return dataclasses.replace(self, x=self.x.copy(), phi=self.phi.copy())
 
+    """
     def to_fourier(self) -> WaveField:
-        """Transforms the field to Fourier space."""
+        # Transforms the field to Fourier space.
         if self.domain == "fourier":
             return self
         return dataclasses.replace(self, phi=fft(self.phi), domain="fourier")
 
     def to_real(self) -> WaveField:
-        """Transforms the field to Real space."""
+        # Transforms the field to Real space.
         if self.domain == "real":
             return self
         return dataclasses.replace(self, phi=ifft(self.phi), domain="real")
+    """
+
+    def to_fourier(self) -> WaveField:
+        # Transforms the field to Fourier space with proper centering.
+        if self.domain == "fourier":
+            return self
+        # On décale le signal pour que x=0 soit vu à l'index 0 par la FFT
+        shifted_phi = np.fft.ifftshift(self.phi)
+        return dataclasses.replace(self, phi=np.fft.fft(shifted_phi), domain="fourier")
+
+    def to_real(self) -> WaveField:
+        # Transforms the field to Real space with proper centering.
+        if self.domain == "real":
+            return self
+        # On calcule l'inverse et on remet le centre au milieu du tableau
+        raw_phi = np.fft.ifft(self.phi)
+        return dataclasses.replace(self, phi=np.fft.fftshift(raw_phi), domain="real")

@@ -6,11 +6,11 @@ r0 = 2.0        # initial beam radius
 
 # Numerical parameters
 x_size = 60.0   # transverse domain size
-nx = 1024       # number of grid points (2^10)
-h = 0.1         # integration step size
+nx = 1024 # number of grid points (2^10)
+h = 0.1       # integration step size
 
 # Random medium parameters
-z_c = 1.0       # correlation length (z)
+z_c = 1       # correlation length (z)
 x_c = 4.0       # correlation length (x)
 sigma = 1.0     # fluctuation strength
 
@@ -20,3 +20,5 @@ r_m = 20.0  # mirror radius
 
 # Simulation settings
 n_monte_carlo = 100 # number of realizations
+
+t_max = 20.0

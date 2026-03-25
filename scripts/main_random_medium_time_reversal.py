@@ -1,3 +1,6 @@
+import pathlib
+
+import matplotlib.pyplot as plt
 import numpy as np
 
 from time_reversal.config import SimulationConfig
@@ -6,17 +9,21 @@ from time_reversal.propagation_fun import (
     mean_field_random_medium_refocused,
 )
 from time_reversal.simulation import run_monte_carlo_simulation
-from time_reversal.viz import plot_comparison, plot_intensity_map, setup_style
+from time_reversal.viz import (
+    plot_intensity_grid,
+    plot_intensity_map,
+    plot_intensity_section,
+    plot_multiple_intensity_section,
+    setup_style,
+)
 
 
-def main():
-    setup_style()
-
-    cfg = SimulationConfig.from_cli()
-    print(f"Running Random Medium Time Reversal with: {cfg}")
-
-    x = np.linspace(cfg.x_min, cfg.x_max, cfg.nx)
-    phi_init_ref = init_homogeneous(x, cfg.r0)
+def monte_carlo_random_medium_time_reversal(
+    cfg: SimulationConfig,
+    x: np.ndarray,
+    phi_init_ref: np.ndarray,
+    save_path: pathlib.Path,
+):
 
     # Run Monte Carlo Simulation
     mc_result = run_monte_carlo_simulation(
@@ -26,29 +33,31 @@ def main():
         verbose=True,
     )
 
-    if mc_result.single_realization_history is not None:
-        intensity_map = np.abs(mc_result.single_realization_history.T) ** 2
-        plot_intensity_map(
-            intensity_map,
-            extent=[0, 2 * cfg.L, cfg.x_min, cfg.x_max],
-            title=f"Single Realization Propagation (Forward + Time Reversal)\nz_mirror={cfg.L}, z_focus={2 * cfg.L}",
-            xlabel="Propagation distance z",
-        )
+    if save_path and not save_path.exists():
+        save_path.mkdir(parents=True)
 
-    if mc_result.mean_intensity_map is not None:
-        plot_intensity_map(
-            mc_result.mean_intensity_map,
-            extent=[0, 2 * cfg.L, cfg.x_min, cfg.x_max],
-            title=f"Average Intensity Propagation (N={cfg.n_monte_carlo})\n(Forward + Time Reversal)",
-            xlabel="Propagation distance z",
-        )
+    plot_intensity_map(
+        mc_result.mean_intensity_map,
+        extent=[0, 2 * cfg.L, cfg.x_min, cfg.x_max],
+        title=f"Average Intensity Propagation (N={cfg.n_monte_carlo})\n(Forward + Time Reversal)",
+        xlabel="Propagation distance z",
+        ylabel="Transverse coordinate x",
+        save_path=save_path / "intensity_map_time_reversal.pdf",
+    )
+    plt.close()
 
-    plot_comparison(
+    plot_intensity_section(
         x,
         mc_result.mean_field,
         phi_init_ref,
         title=f"Mean Refocused Intensity at z=2L vs Initial Source\n(Averaged over {cfg.n_monte_carlo} realizations)",
+        xlabel=r"$x$ (Transverse position)",
+        ylabel=r"$|\phi(x)|^2$ (Amplitude)",
+        label_curve1="Mean Refocused",
+        label_curve2="Initial Source",
+        save_path=save_path / "intensity_section_time_reversal_initial.pdf",
     )
+    plt.close()
 
     mean_theory = mean_field_random_medium_refocused(
         x,
@@ -61,11 +70,89 @@ def main():
         r_m=cfg.r_m,
         x_c=cfg.x_c,
     )
-    plot_comparison(
+
+    plot_intensity_section(
         x,
         mc_result.mean_field,
         mean_theory,
-        title="Refocused Intensity at z=2L vs Initial Source",
+        title="Refocused Intensity at z=2L vs Theoretical Prediction",
+        xlabel=r"$x$ (Transverse position)",
+        ylabel=r"$|\phi(x)|^2$ (Amplitude)",
+        label_curve1="Mean Refocused",
+        label_curve2="Theoretical Prediction",
+        save_path=save_path / "intensity_section_time_reversal_theory.pdf",
+    )
+    plt.close()
+
+    return mc_result.mean_field, mean_theory, mc_result.single_realization_history
+
+
+def main():
+    setup_style()
+
+    cfg = SimulationConfig.from_cli()
+    print(f"Running Random Medium Time Reversal with: {cfg}")
+
+    x = np.linspace(cfg.x_min, cfg.x_max, cfg.nx)
+    phi_init_ref = init_homogeneous(x, cfg.r0)
+
+    save_base_path = pathlib.Path(
+        f"output/random_medium_time_reversal/{cfg.mirror_type}/"
+    )
+    if not save_base_path.exists():
+        save_base_path.mkdir(parents=True)
+
+    rms = [2.0, 5.0, 10.0, 20.0]
+    sigmas = [0.1, 0.2, 0.3, 0.5, 1.0, 2.0]
+
+    intensity_grid_data = []
+    row_labels = [f"$r_m={rm}$" for rm in rms]
+    col_labels = [rf"$\sigma={s}$" for s in sigmas]
+
+    for rm in rms:
+        cfg.r_m = rm
+        data_plot = []
+        save_path = save_base_path / f"rm_{rm:.2f}"
+
+        if not save_path.exists():
+            save_path.mkdir(parents=True)
+
+        intensity_grid_data_row = []
+
+        for sigma in sigmas:
+            cfg.sigma = sigma
+            # Run Monte Carlo Simulation for Time Reversal in Random Medium
+            mean_field, _, history = monte_carlo_random_medium_time_reversal(
+                cfg,
+                x,
+                phi_init_ref,
+                save_path=save_path / f"sigma_{sigma:.2f}",
+            )
+            data_plot.append((mean_field, rf"Numerical ($\sigma={sigma:.2f}$)", None))
+            intensity_grid_data_row.append(np.abs(history).T ** 2)
+
+        plot_multiple_intensity_section(
+            x,
+            data_list=data_plot,
+            title=f"Comparison of Refocused Intensity at $z=2L$ for $r_m={rm}$\n(Averaged over {cfg.n_monte_carlo} realizations)",
+            xlabel=r"$x$ (Transverse position)",
+            ylabel=r"$|\phi(x)|^2$ (Amplitude)",
+            save_path=save_path / "intensity_comparison.pdf",
+            show=False,
+        )
+        plt.close()
+        intensity_grid_data.append(intensity_grid_data_row)
+
+    plot_intensity_grid(
+        intensity_grid_data,
+        row_labels=row_labels,
+        col_labels=col_labels,
+        extent=[0, 2 * cfg.L, cfg.x_min, cfg.x_max],
+        xlabel="Propagation distance z",
+        ylabel="Transverse coordinate x",
+        title="Intensity Propagation for Time Reversal in Random Medium",
+        save_path=save_base_path / "intensity_grid_time_reversal.pdf",
+        show=True,
     )
 
 

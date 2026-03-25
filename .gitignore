@@ -207,3 +207,4 @@ pyrightconfig.json
 AGENTS.md
 tests/
 data/
+output/

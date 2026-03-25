@@ -46,6 +46,7 @@ def run_single_simulation(
     return_history: bool = False,
     use_fast_solver: bool = True,
     seed: Optional[int] = None,
+    mixed: bool = False,
 ) -> SimulationResult:
     """
     Runs a single time reversal simulation (Forward -> Mirror -> Backward).
@@ -112,6 +113,10 @@ def run_single_simulation(
 
     if cfg.mirror_type == "gaussian":
         mirror = gaussian_mirror(x, cfg.r_m)
+    elif cfg.mirror_type == "gaussian_adaptive":
+        idx_peak = np.argmax(np.abs(phi_at_L))
+        x_peak = x[idx_peak]
+        mirror = np.exp(-((x - x_peak) ** 2) / cfg.r_m**2)
     elif cfg.mirror_type == "compact":
         mirror = compact_mirror(x, cfg.r_m)
     else:
@@ -121,12 +126,18 @@ def run_single_simulation(
     field = dataclasses.replace(field, phi=phi_tr)
 
     # backward propagation
-    if is_homogeneous:
+    if is_homogeneous or mixed:
+        if mixed:
+            propagator = SplitStepPropagator(
+                steps=[(DiffractionOperator(), solver)]
+            )  # remove refraction for backward pass in mixed case
         for _ in range(total_steps_one_way):
             field = propagator.step(field, dz=cfg.h)
             if return_history:
                 history.append(field.to_real().phi)
     else:
+        backward_steps = steps[::-1]
+        propagator = SplitStepPropagator(steps=backward_steps)
         for i in range(n_layers - 1, -1, -1):
             mu_layer = gaussian_samples[i]  # type: ignore
             for _ in range(n_steps_per_layer):
@@ -147,6 +158,7 @@ def run_monte_carlo_simulation(
     compute_intensity_map: bool = True,
     use_fast_solver: bool = True,
     verbose: bool = True,
+    mixed: bool = False,
 ) -> MonteCarloResult:
     """
     Runs Monte Carlo simulations to compute mean field and mean intensity.
@@ -189,7 +201,10 @@ def run_monte_carlo_simulation(
         need_history = compute_intensity_map or is_last
 
         res = run_single_simulation(
-            cfg, return_history=need_history, use_fast_solver=use_fast_solver
+            cfg,
+            return_history=need_history,
+            use_fast_solver=use_fast_solver,
+            mixed=mixed,
         )
 
         if sum_field is None:

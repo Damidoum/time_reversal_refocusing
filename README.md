@@ -13,7 +13,7 @@ The project is organized into the following components:
 - Core Library (`notebooks/`): The custom Python module implementing the numerical methods (Fourier transforms, time-reversal mirrors, split-step solvers). 
 - Animations: A .mp4 file illustrating the dynamic, time-dependent wave refocusing process, generated directly via the notebooks.
  
-<video src="./notebooks/time_reversal_demo.mp4" width="100%" controls></video>
+<video src="https://github.com/Damidoum/time_reversal_refocusing/raw/refs/heads/main/notebooks/time_reversal_demo.mp4" width="100%" controls></video>
 
 # Installation
 

@@ -7,7 +7,7 @@ This project accompanies a theoretical report detailing how wave propagation thr
 
 The project is organized into the following components:
 
-- LaTeX Report: Contains the theoretical framework, mathematical derivations, and detailed explanations of the paraxial approximation and the Split-Step Fourier Method.
+- LaTeX Report (`report.pdf`): Contains the theoretical framework, mathematical derivations, and detailed explanations of the paraxial approximation and the Split-Step Fourier Method.
 - Jupyter Notebooks (`notebooks/`): Contains the interactive simulations, numerical experiments, and generated plots.
 - Core Library (`notebooks/`): The custom Python module implementing the numerical methods (Fourier transforms, time-reversal mirrors, split-step solvers). 
 - Animations: A .mp4 file illustrating the dynamic, time-dependent wave refocusing process, generated directly via the notebooks.

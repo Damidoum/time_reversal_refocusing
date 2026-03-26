@@ -11,12 +11,21 @@ The project is organized into the following components:
 - LaTeX Report (`report.pdf`): Contains the theoretical framework, mathematical derivations, and detailed explanations of the paraxial approximation and the Split-Step Fourier Method.
 - Jupyter Notebooks (`notebooks/`): Contains the interactive simulations, numerical experiments, and generated plots.
 - Core Library (`notebooks/`): The custom Python module implementing the numerical methods (Fourier transforms, time-reversal mirrors, split-step solvers). 
-- Animations: A .mp4 file illustrating the dynamic, time-dependent wave refocusing process, generated directly via the notebooks.
+- Animations: A set of .mp4 files illustrating the dynamic, time-dependent wave refocusing process, generated directly via the notebooks.
  
+Here are some examples:
 
-https://github.com/user-attachments/assets/d2b82e22-6d80-4c90-bf1d-3a66065130b9
+#### Refocusing with large mirror in homogeneous medium
+https://github.com/user-attachments/assets/8cabbd11-dabf-4fe5-a60f-fa5562dd2d46
 
+#### Refocusing with small mirror in homogeneous medium
+https://github.com/user-attachments/assets/be6bdf19-673f-496d-8668-7151573377b1
 
+#### Refocusing with large mirror in random medium
+https://github.com/user-attachments/assets/a5eb0e2b-54f4-433f-9d62-b17503be9dd4
+
+#### Refocusing with small mirror in random medium
+https://github.com/user-attachments/assets/6c53797c-ac6e-4f12-a146-ad10f6d33a72
 
 # Installation
 

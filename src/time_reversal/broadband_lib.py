@@ -8,33 +8,37 @@ from time_reversal.simulation import run_single_simulation
 
 
 def _run_single_freq_worker(args):
-    """
-    Worker function for parallel frequency simulation.
-    Args: (cfg, omega, seed)
-    """
     cfg, omega, seed = args
     cfg_freq = dataclasses.replace(cfg, w=omega)
-
-    # Set seed for reproducible random medium
     np.random.seed(seed)
 
-    # Run simulation
     res = run_single_simulation(cfg_freq, return_history=True, use_fast_solver=True)
-
     if res.history is None:
         return None
 
-    # superposition
-    nz = res.history.shape[0]
-    z_grid = np.arange(nz) * cfg_freq.h
-    modulation = np.exp(1j * cfg_freq.k_const * z_grid)
+    nz_total = res.history.shape[0]
+    nz_half = nz_total // 2
 
-    return res.history * modulation[:, np.newaxis]
+    phi_fwd = res.history[:nz_half]
+    phi_bwd = res.history[nz_half:]
+
+    z_grid_fwd = np.arange(nz_half) * cfg_freq.h
+    L = z_grid_fwd[-1]
+
+    z_grid_bwd = np.arange(nz_total - nz_half) * cfg_freq.h + L
+
+    u_fwd = phi_fwd * np.exp(1j * cfg_freq.k_const * z_grid_fwd)[:, np.newaxis]
+    u_bwd = (
+        phi_bwd * np.exp(1j * cfg_freq.k_const * (z_grid_bwd - 2 * L))[:, np.newaxis]
+    )
+
+    return u_fwd, u_bwd
 
 
 def run_broadband_parallel(cfg, n_freq=50, delta_omega=1.5, seed=42):
     """
     Runs broadband simulation using ProcessPoolExecutor.
+    Returns separate forward and backward fields.
     """
     omegas = np.linspace(cfg.w - delta_omega, cfg.w + delta_omega, n_freq)
 
@@ -49,16 +53,18 @@ def run_broadband_parallel(cfg, n_freq=50, delta_omega=1.5, seed=42):
             )
         )
 
-    final_fields = np.array([r for r in results if r is not None])
+    valid_results = [r for r in results if r is not None]
 
-    return final_fields, omegas
+    final_fwd = np.array([r[0] for r in valid_results])
+    final_bwd = np.array([r[1] for r in valid_results])
+
+    return final_fwd, final_bwd, omegas
 
 
-def reconstruct_time_domain(final_fields, omegas, t_max, nt=100):
+def reconstruct_time_domain(final_fields, omegas, t_grid):
     """
-    Reconstructs time domain signal.
+    Reconstructs time domain signal for a specific time grid.
     """
-    t_grid = np.linspace(0, t_max, nt)
     n_freq, nz, nx = final_fields.shape
 
     # Matrix multiplication: Time(t, pixel) = Sum_w Field(w, pixel) * exp(-i w t) * dw
@@ -73,8 +79,8 @@ def reconstruct_time_domain(final_fields, omegas, t_max, nt=100):
     # (nt, nz*nx)
     time_domain_flat = transform_matrix @ flat_fields
 
-    # Reshape: (nt, nz, nx)
-    time_domain = time_domain_flat.reshape(nt, nz, nx)
+    # Reshape: (len(t_grid), nz, nx)
+    time_domain = time_domain_flat.reshape(len(t_grid), nz, nx)
 
     # Real part is physical field
-    return t_grid, (time_domain * dw / (2 * np.pi)).real
+    return (time_domain * dw / (2 * np.pi)).real

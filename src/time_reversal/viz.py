@@ -257,26 +257,23 @@ def animate_wavefield_mp4(
 def animate_wavefield_comparison(
     forward_signal: np.ndarray,
     backward_signal: np.ndarray,
-    cfg: SimulationConfig,
     t_skip: int = 1,
+    z_skip: int = 1,
     x_skip: int = 1,
     fps: int = 30,
     save_path: Path | None = None,
 ):
-    f_data = forward_signal[::t_skip, ::x_skip, ::x_skip]
-    b_data = backward_signal[::t_skip, ::x_skip, ::x_skip]
 
-    n_frames_prop = f_data.shape[0]
-    pause_frames = fps  # 1 second pause
+    f_data = forward_signal[::t_skip, ::z_skip, ::x_skip]
+    b_data = backward_signal[::t_skip, ::z_skip, ::x_skip]
 
-    # Calculate exact index where the wave hits the mirror to synchronize videos
-    time_to_mirror = cfg.L / cfg.c0
-    frame_mirror = int((time_to_mirror / cfg.t_max) * n_frames_prop)
-
-    total_frames = n_frames_prop + pause_frames + n_frames_prop
+    n_frames = f_data.shape[0]
+    pause_frames = fps
+    total_frames = n_frames + pause_frames + n_frames
 
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(15, 6))
-    max_amp = np.max(np.abs(f_data)) * 0.15
+
+    max_amp = np.max(np.abs(f_data)) * 0.2
 
     im1 = ax1.imshow(
         np.zeros_like(f_data[0]),
@@ -295,63 +292,53 @@ def animate_wavefield_comparison(
         aspect="auto",
     )
 
-    title1 = ax1.set_title("")
-    title2 = ax2.set_title("")
+    ax1.set_title("FORWARD", fontsize=14)
+    ax2.set_title("PHYSICAL TIME REVERSAL", fontsize=14)
 
-    ax1.set_xticks([])
-    ax1.set_yticks([])
-    ax2.set_xticks([])
-    ax2.set_yticks([])
+    for ax in [ax1, ax2]:
+        ax.set_xticks([])
+        ax.set_yticks([])
 
     def update(frame):
-        if frame < n_frames_prop:
+        if frame < n_frames:
             im1.set_array(f_data[frame])
             im2.set_array(np.zeros_like(f_data[0]))
-            title1.set_text("FORWARD")
-            title2.set_text("Waiting...")
+            fig.suptitle(f"FORWARD", fontsize=16)
 
-        elif frame < n_frames_prop + pause_frames:
-            im1.set_array(f_data[-1])  # Stay at mirror
-            im2.set_array(np.flip(b_data[0], 0))
-            title1.set_text("RECORDING COMPLETE")
-            title2.set_text("TIME REVERSAL PROCESS")
+        elif frame < n_frames + pause_frames:
+            im1.set_array(f_data[-1])  # Reste au miroir
+            im2.set_array(np.zeros_like(f_data[0]))
+            fig.suptitle("REVERSING SIGNAL...", fontsize=16)
 
         else:
-            idx = frame - (n_frames_prop + pause_frames)
+            idx = frame - (n_frames + pause_frames)
 
-            # Right side: Physical reality flows forward in array
-            im2.set_array(np.flip(b_data[idx], 0))
-
-            # Left side: Perfect mathematical rewind synchronized at t = L/c0
-            rewind_idx = 2 * frame_mirror - idx
-            if 0 <= rewind_idx < n_frames_prop:
+            rewind_idx = (n_frames - 1) - idx
+            if rewind_idx >= 0:
                 im1.set_array(f_data[rewind_idx])
             else:
-                im1.set_array(np.zeros_like(f_data[0]))
+                im1.set_array(f_data[0])
 
-            title1.set_text("MOVIE REWIND")
-            title2.set_text("TIME REVERSAL")
+            if idx < b_data.shape[0]:
+                im2.set_array(b_data[idx])
+            else:
+                im2.set_array(b_data[-1])
 
-        return [im1, im2, title1, title2]
+            fig.suptitle(f"TIME REVERSAL", fontsize=16)
+
+        return [im1, im2]
 
     ani = animation.FuncAnimation(fig, update, frames=total_frames, blit=True)
 
-    if save_path is not None:
-        if not save_path.parent.exists():
-            save_path.parent.mkdir(parents=True)
+    if save_path:
+        save_path.parent.mkdir(parents=True, exist_ok=True)
         ani.save(
             save_path,
             fps=fps,
             writer="ffmpeg",
-            extra_args=[
-                "-vcodec",
-                "libx264",
-                "-pix_fmt",
-                "yuv420p",
-                "-movflags",
-                "faststart",
-            ],
+            extra_args=["-vcodec", "libx264", "-pix_fmt", "yuv420p"],
         )
+
     plt.close(fig)
 
 
